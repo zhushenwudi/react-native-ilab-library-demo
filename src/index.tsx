@@ -17,6 +17,8 @@ const IlabLibraryDemo = NativeModules.IlabLibraryDemo
       }
     );
 
+async function request
+
 export function multiply(a: number, b: number): Promise<number> {
   return IlabLibraryDemo.multiply(a, b);
 }

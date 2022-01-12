@@ -1,10 +1,13 @@
-package com.reactnativeilablibrarydemo
+package com.example.reactnativeilablibrarydemo
 
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import com.ftd.livepermissions.LivePermissions
 import com.ftd.livepermissions.PermissionResult
+import com.reactnativeilablibrarydemo.R
+import com.reactnativeilablibrarydemo.showErrorDialog
+import com.reactnativeilablibrarydemo.showTwoButtonDialog
 
 fun AppCompatActivity.requestPermission(
     vararg permissions: String,
@@ -14,7 +17,7 @@ fun AppCompatActivity.requestPermission(
 ) {
     LivePermissions(this)
         .request(*permissions)
-        .observe(this, Observer<PermissionResult> {
+        .observe(this, {
             when (it) {
                 is PermissionResult.Grant -> {
                     //权限允许

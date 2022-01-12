@@ -2,9 +2,12 @@ package com.reactnativeilablibrarydemo
 
 import android.Manifest
 import android.app.Application
+import android.content.pm.PackageManager
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
@@ -22,6 +25,9 @@ import java.io.File
 import java.math.BigDecimal
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.regex.Pattern
+import com.facebook.react.modules.core.DeviceEventManagerModule
+import com.facebook.react.modules.core.DeviceEventManagerModule.RCTDeviceEventEmitter
+
 
 class ILabLibraryDemoModule(
     reactContext: ReactApplicationContext
@@ -36,67 +42,75 @@ class ILabLibraryDemoModule(
     override fun getName() = "ILabLibraryOmniKey"
 
     init {
-        val activity = this.currentActivity as AppCompatActivity
-        val owner = activity as LifecycleOwner
-        omniMsg.observe(owner, Observer<Pair<OmniCard.Status, String>> {
-            if (it.second == OmniCard.READER_NOT_FOUND) {
-                activity.showNoButtonDialog(
-                    owner = owner,
-                    title = "未找到刷卡硬件",
-                    messageVisible = View.GONE,
-                    photo = R.drawable.card_red
-                )
-                OmniCard.unbind()
-                return@Observer
-            }
-            if (it.first == OmniCard.Status.MESSAGE && isCanRead.get()) {
-                activity.showNoButtonDialog(
-                    owner = this.currentActivity as LifecycleOwner,
-                    title = "温馨提示",
-                    message = "请将IC卡放置到您的读写设备上",
-                    photo = R.drawable.iccard_hand,
-                    time = 30 * 1000,
-                    onTimeout = {
-                        OmniCard.unbind()
-                    }
-                )
-                return@Observer
-            }
-            if (isNumeric(it.second) && isCanRead.get()) {
-                hideNoButtonDialog()
-                isCanRead.set(false)
-                OmniCard.unbind()
-                Log.e("aaa", it.second)
-            }
-        })
+        this.currentActivity?.run {
+            val owner = this as LifecycleOwner
+            omniMsg.observe(owner, Observer {
+                if (it.second == OmniCard.READER_NOT_FOUND) {
+                    showNoButtonDialog(
+                        owner = owner,
+                        title = "未找到刷卡硬件",
+                        messageVisible = View.GONE,
+                        photo = R.drawable.card_red
+                    )
+                    OmniCard.unbind()
+                    return@Observer
+                }
+                if (it.first == OmniCard.Status.MESSAGE && isCanRead.get()) {
+                    showNoButtonDialog(
+                        owner = owner,
+                        title = "温馨提示",
+                        message = "请将IC卡放置到您的读写设备上",
+                        photo = R.drawable.iccard_hand,
+                        time = 30 * 1000,
+                        onTimeout = {
+                            OmniCard.unbind()
+                        }
+                    )
+                    return@Observer
+                }
+                if (isNumeric(it.second) && isCanRead.get()) {
+                    hideNoButtonDialog()
+                    isCanRead.set(false)
+                    OmniCard.unbind()
+                    reactApplicationContext
+                        .getJSModule(RCTDeviceEventEmitter::class.java)
+                        .emit("cardId", it.second)
+                    Log.e("aaa", it.second)
+                }
+            })
+        }
     }
 
     @ReactMethod
     fun readCard() {
-        val activity = this.currentActivity as AppCompatActivity
-        val owner = activity as LifecycleOwner
-        activity.requestPermission(
-            permissions = *arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
-            onGrant = {
-                if (AppUtils.isInstalledApp(OmniCard.PACKAGE_NAME)) {
-                    requestCardPermission()
-                } else {
-                    installOmniCardApk()
-                    activity.showNoButtonDialog(
-                        owner = owner,
-                        photo = R.drawable.contacted_icon,
-                        title = "正在安装读卡驱动软件...",
-                        messageVisible = View.INVISIBLE,
-                        onTimeout = {
-                            requestCardPermission(true)
-                        }
-                    )
-                }
-            },
-            onRationale = {
-                readCard()
+        val activity = this.currentActivity
+
+        if (ContextCompat.checkSelfPermission(
+                reactApplicationContext,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            if (AppUtils.isInstalledApp(OmniCard.PACKAGE_NAME)) {
+                requestCardPermission()
+            } else {
+                installOmniCardApk()
+                activity?.showNoButtonDialog(
+                    owner = activity as LifecycleOwner,
+                    photo = R.drawable.contacted_icon,
+                    title = "正在安装读卡驱动软件...",
+                    messageVisible = View.INVISIBLE,
+                    onTimeout = {
+                        requestCardPermission(true)
+                    }
+                )
             }
-        )
+        } else {
+            activity?.showNoButtonDialog(
+                owner = activity as LifecycleOwner,
+                title = "您未赋予权限，无法使用此功能",
+                messageVisible = View.INVISIBLE
+            )
+        }
     }
 
     private fun installOmniCardApk() {
@@ -111,20 +125,26 @@ class ILabLibraryDemoModule(
     }
 
     private fun requestCardPermission(isInit: Boolean = false) {
-        val activity = this.currentActivity as AppCompatActivity
-        activity.requestPermission(
-            permissions = *arrayOf(OmniCard.CARD_PERMISSION),
-            onGrant = {
-                isCanRead.set(true)
-                //权限允许
-                OmniCard.bind(
-                    reactApplicationContext.applicationContext as Application, omniMsg, isInit
-                )
-            },
-            onRationale = {
-                requestCardPermission(isInit)
-            }
-        )
+        if (ContextCompat.checkSelfPermission(
+                reactApplicationContext,
+                OmniCard.CARD_PERMISSION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            isCanRead.set(true)
+            //权限允许
+            OmniCard.bind(
+                reactApplicationContext.applicationContext as Application,
+                omniMsg,
+                isInit
+            )
+        } else {
+            val activity = this.currentActivity
+            activity?.showNoButtonDialog(
+                owner = activity as LifecycleOwner,
+                title = "您未赋予权限，无法使用此功能",
+                messageVisible = View.INVISIBLE
+            )
+        }
     }
 
     // 匹配是否为数字

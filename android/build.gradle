@@ -29,7 +29,7 @@ def getExtOrIntegerDefault(name) {
 android {
     compileSdkVersion getExtOrIntegerDefault('compileSdkVersion')
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 25
         targetSdkVersion getExtOrIntegerDefault('targetSdkVersion')
         versionCode 1
         versionName "1.0"
@@ -127,7 +127,6 @@ dependencies {
     // noinspection GradleDynamicVersion
     api 'com.facebook.react:react-native:+'
     implementation 'com.github.zhushenwudi:omnikey:1.0'
-    implementation 'com.ftd.livepermissions:livepermissions:1.0.2'
     implementation "io.github.afkt:DevAppX:2.2.8"
     implementation 'com.github.a-voyager:AutoInstaller:v1.0'
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.4.0"

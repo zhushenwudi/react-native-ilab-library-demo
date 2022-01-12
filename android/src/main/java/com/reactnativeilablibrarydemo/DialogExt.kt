@@ -1,8 +1,8 @@
 package com.reactnativeilablibrarydemo
 
+import android.app.Activity
 import android.app.Dialog
 import android.view.View
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -23,7 +23,7 @@ const val CONFIRM = "我知道了"
 const val DIALOG_WIDTH = 628
 const val DIALOG_HEIGHT = 464
 
-fun AppCompatActivity.showTwoButtonDialog(
+fun Activity.showTwoButtonDialog(
     owner: LifecycleOwner,
     time: Long = DIALOG_TIMER * TIMER_UNIT,
     photo: Int = R.drawable.custom_error,
@@ -70,7 +70,7 @@ fun AppCompatActivity.showTwoButtonDialog(
 /**
  * 打开错误对话框
  */
-fun AppCompatActivity.showErrorDialog(owner: LifecycleOwner, msg: String) {
+fun Activity.showErrorDialog(owner: LifecycleOwner, msg: String) {
     if (!isFinishing) {
         if (isHasDialog.get() == 0) {
             isHasDialog.set(1)
@@ -90,7 +90,7 @@ fun AppCompatActivity.showErrorDialog(owner: LifecycleOwner, msg: String) {
     }
 }
 
-fun AppCompatActivity.showNoButtonDialog(
+fun Activity.showNoButtonDialog(
     owner: LifecycleOwner,
     title: String = TITLE,
     message: String = MESSAGE,
